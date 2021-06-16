@@ -109,6 +109,19 @@
 		document.querySelectorAll('.board .from, .board .to').forEach(el => el.remove())
 	}
 
+	let show = false
+
+	addEventListener('keyup', e => {
+		if (e.key == 's') {
+			if (show) {
+				show = false
+				hideBestMove()
+			} else {
+				show = true
+			}
+		}
+	})
+
 	const showBestMove = (bestMove, isBlack) => {
 		const [ xFrom, yFrom ] = encodeSquareIndex(bestMove.substr(0, 2))
 		const [ xTo, yTo ] = encodeSquareIndex(bestMove.substr(2, 2))
@@ -176,10 +189,13 @@
 						// Until move is made, request best move
 
 						while (numOfMoveMessages == window.moveMessages.length) {
-							const bestMove = await getBestMove()
+							window.bestMove = await getBestMove()
 							console.log('best move:', bestMove)
 
-							showBestMove(bestMove, isBlack)
+							if (show) {
+								showBestMove(bestMove, isBlack)
+							}
+
 							await sleep(500)
 						}
 
