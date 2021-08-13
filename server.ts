@@ -5,12 +5,24 @@ import { exec } from 'child_process'
 
 const stockfish = exec('Stockfish/src/stockfish')
 let bestmove = ''
+let score = ''
 
 stockfish.stdout.on('data', (chunk: string) => {
 	console.log('Stockfish:', chunk)
 
 	if (chunk.includes('pv')) {
-		bestmove = chunk.substr(chunk.lastIndexOf('pv') + 3, 4)
+		bestmove = chunk.substr(chunk.lastIndexOf('pv') + 3)
+		bestmove = bestmove.substr(0, bestmove.indexOf('\n'))
+	}
+
+	if (chunk.includes('score cp')) {
+		let str = chunk.substr(chunk.lastIndexOf('score cp') + 9)
+		score = (+str.substr(0, str.indexOf(' ')) / 100).toString()
+	}
+
+	if (chunk.includes('score mate')) {
+		let str = chunk.substr(chunk.lastIndexOf('score mate') + 11)
+		score = 'Mate in ' + str.substr(0, str.indexOf(' '))
 	}
 })
 
@@ -58,6 +70,10 @@ const getBestMove = (res: http.ServerResponse) => {
 	res.end(bestmove)
 }
 
+const getScore = (res: http.ServerResponse) => {
+	res.end(score)
+}
+
 const server = http.createServer(async (req, res) => {
 	const body = await parseJSONBody(req)
 	console.log(body)
@@ -85,6 +101,10 @@ const server = http.createServer(async (req, res) => {
 
 		case 'get-best-move':
 			getBestMove(res)
+			break
+
+		case 'get-score':
+			getScore(res)
 			break
 	}
 })
