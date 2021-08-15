@@ -11,8 +11,9 @@ stockfish.stdout.on('data', (chunk: string) => {
 	console.log('Stockfish:', chunk)
 
 	if (chunk.includes('pv')) {
-		bestmove = chunk.substr(chunk.lastIndexOf('pv') + 3)
-		bestmove = bestmove.substr(0, bestmove.indexOf('\n'))
+		let newBestMove = chunk.substr(chunk.lastIndexOf('pv') + 3)
+		newBestMove = newBestMove.substr(0, newBestMove.indexOf('\n'))
+		if (!bestmove.startsWith(newBestMove)) bestmove = newBestMove
 	}
 
 	if (chunk.includes('score cp')) {
