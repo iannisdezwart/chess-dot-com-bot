@@ -276,7 +276,7 @@
 
 		const moves = bestMove.split(' ')
 
-		for (let i = 0; i < 3 && i < moves.length; i++) {
+		for (let i = 0; i < 10 && i < moves.length; i++) {
 			const [ xFrom, yFrom ] = encodeSquareIndex(moves[i].substr(0, 2))
 			const [ xTo, yTo ] = encodeSquareIndex(moves[i].substr(2, 2))
 
@@ -356,7 +356,12 @@
 					console.log('current board state:', boardState)
 					const isBlack = document.querySelector('.board').classList.contains('flipped')
 
-					if (!isBlack && data.game.seq % 2 == 0 || isBlack && data.game.seq % 2 == 1) {
+					await stopSearchingForBestMove()
+					hideBestMove()
+					console.log('stopped searching for best move')
+
+					// if (!isBlack && data.game.seq % 2 == 0 || isBlack && data.game.seq % 2 == 1) {
+					if (true) {
 						await startSearchingForBestMove(boardState)
 						console.log('started searching for best move')
 
@@ -372,10 +377,6 @@
 
 							await sleep(500)
 						}
-
-						await stopSearchingForBestMove()
-						hideBestMove()
-						console.log('stopped searching for best move')
 					}
 				} catch (err) {}
 			})
