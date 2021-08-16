@@ -11,5 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^15.12.2"
-  }
+  },
+	"type": "module"
 }
