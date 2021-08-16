@@ -110,4 +110,8 @@ const server = http.createServer(async (req, res) => {
 	}
 })
 
-server.listen(1337)
+const port = +process.argv[2] || 1337
+
+server.listen(port, () => {
+	console.log(`server listening on port ${ port }`)
+})

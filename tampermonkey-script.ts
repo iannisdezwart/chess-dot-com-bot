@@ -18,13 +18,12 @@ interface Window {
 	seq: number
 	clientId: string
 	uid: string
-	performMove: (move: string) => void
 }
 
 window.websockets = []
 window.moveMessages = []
 window.sentMessages = []
-window.seq = 0
+window.seq = 1
 
 interface Player {
 	gid: number
@@ -302,22 +301,59 @@ const hideBestMove = () => {
 		.forEach(el => el.remove())
 }
 
-let show = Boolean(+localStorage.getItem('show-moves')) || false
+// Options
 
-addEventListener('keyup', e => {
-	if (e.key == 's') {
-		if (show) {
-			show = false
-			document.querySelector('#chess-bot-stats-show-moves').innerHTML = 'Off'
-			localStorage.setItem('show-moves', '0')
-			hideBestMove()
-		} else {
-			show = true
-			document.querySelector('#chess-bot-stats-show-moves').innerHTML = 'On'
-			localStorage.setItem('show-moves', '1')
-		}
-	}
-})
+document.body.insertAdjacentHTML('beforeend', /* html */ `
+<div id="chess-bot-stats" style="
+	position: fixed;
+	background-color: rgba(255, 0, 0, 0.5);
+	bottom: 0;
+	right: 0;
+	color: #fff;
+	padding: .5em;
+">
+	<div>
+		Score:
+		<span id="chess-bot-stats-score">0</span>
+	</div>
+	<div>
+		Show moves:
+		<input type="checkbox" id="show-moves"
+			${ localStorage.getItem('show-moves') == '1' ? 'checked' : '' }>
+	</div>
+	<div>
+		Auto move:
+		<input type="checkbox" id="auto-move"
+			${ localStorage.getItem('auto-move') == '1' ? 'checked' : '' }>
+	</div>
+	<div>
+		Clock:
+		<span id="chess-bot-stats-clock"></span>
+	</div>
+</div>
+`)
+
+let show = () => Boolean(+localStorage.getItem('show-moves')) || false
+let autoMove = () => Boolean(+localStorage.getItem('auto-move')) || false
+
+const showMovesCheckbox = document.querySelector<HTMLInputElement>('#show-moves')
+const autoMoveCheckbox = document.querySelector<HTMLInputElement>('#auto-move')
+
+const createToggleHandler = (
+	checkbox: HTMLInputElement,
+	localStorageName: string,
+	cb?: (checked: boolean) => void
+) => () => {
+	localStorage.setItem(localStorageName, checkbox.checked ? '1' : '0')
+	if (cb != null) cb(checkbox.checked)
+}
+
+showMovesCheckbox.addEventListener('change',
+	createToggleHandler(showMovesCheckbox, 'show-moves',
+		checked => !checked ? hideBestMove() : null))
+
+autoMoveCheckbox.addEventListener('change',
+	createToggleHandler(autoMoveCheckbox, 'auto-move'))
 
 const showBestMove = (bestMove: string, isBlack: boolean) => {
 	hideBestMove()
@@ -352,6 +388,7 @@ const showBestMove = (bestMove: string, isBlack: boolean) => {
 		width: 100%;
 		height: 100%;
 		z-index: 999;
+		pointer-events: none;
 	" height="1000" width="1000"></canvas>
 	`)
 
@@ -421,32 +458,6 @@ const showBestMove = (bestMove: string, isBlack: boolean) => {
 
 // Score timeout
 
-document.body.insertAdjacentHTML('beforeend', /* html */ `
-<div id="chess-bot-stats" style="
-	position: absolute;
-	background-color: rgba(255, 0, 0, 0.5);
-	top: 0;
-	right: 0;
-	color: #fff;
-	padding: .5em;
-">
-	<div>
-		Score:
-		<span id="chess-bot-stats-score">0</span>
-	</div>
-	<div>
-		Show moves:
-		<span id="chess-bot-stats-show-moves">
-			${ localStorage.getItem('show-moves') == '0' ? 'Off' : 'On' }
-		</span>
-	</div>
-	<div>
-		Clock:
-		<span id="chess-bot-stats-clock"></span>
-	</div>
-</div>
-`)
-
 // Update score
 
 setInterval(async () => {
@@ -469,7 +480,7 @@ const getGameWebSocket = () => {
 
 // Perform a move
 
-window.performMove = (move: string) => {
+const performMove = (move: string) => {
 	const timeTaken = Date.now() - window.lastMoveOpponentPlayedTime
 	const newClockMs = window.clock * 100 - timeTaken
 	const ws = getGameWebSocket()
@@ -535,12 +546,19 @@ const handleMoveMade = async (data: MoveMade) => {
 
 	// Until move is made, request best move
 
+	const startTime = Date.now()
+
 	while (numOfMoveMessages == window.moveMessages.length) {
 		const bestMove = await getBestMove()
 		console.log('best move:', bestMove)
 
-		if (show) {
+		if (show()) {
 			showBestMove(bestMove, isBlack)
+		}
+
+		if (isTurn && autoMove() && Date.now() - startTime > 1000) {
+			await sleep(Math.random() * 500)
+			performMove(bestMove.split(' ')[0])
 		}
 
 		await sleep(500)
